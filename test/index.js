@@ -22,13 +22,12 @@ const {
 
 const dir = '/tmp/index-feed-writer'
 const mainKey = ssbKeys.loadOrCreateSync(path.join(dir, 'secret'))
+rimraf.sync(dir, { maxBusyTries: 3 })
+mkdirp.sync(dir)
 
 let VOTES_COUNT = 0
 
 test('setup', async (t) => {
-  rimraf.sync(dir)
-  mkdirp.sync(dir)
-
   await generateFixture({
     outputDir: dir,
     seed: 'ssbindexfeedwriter',
