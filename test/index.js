@@ -1,170 +1,137 @@
 const test = require('tape')
-// const ssbKeys = require('ssb-keys')
-// const path = require('path')
-const rimraf = require('rimraf')
 const SecretStack = require('secret-stack')
 const caps = require('ssb-caps')
+const fs = require('fs')
+const pull = require('pull-stream')
+const ssbKeys = require('ssb-keys')
+const path = require('path')
+const rimraf = require('rimraf')
+const mkdirp = require('mkdirp')
+const run = require('promisify-tuple')
+const fromEvent = require('pull-stream-util/from-event')
+const sleep = require('util').promisify(setTimeout)
+const generateFixture = require('ssb-fixtures')
+const { where, author, toPromise, toCallback } = require('ssb-db2/operators')
 
 const dir = '/tmp/index-feed-writer'
 const mainKey = ssbKeys.loadOrCreateSync(path.join(dir, 'secret'))
 
-rimraf.sync(dir)
+test('setup', async (t) => {
+  rimraf.sync(dir)
+  mkdirp.sync(dir)
+
+  await generateFixture({
+    outputDir: dir,
+    seed: 'ssbindexfeedwriter',
+    messages: 50,
+    authors: 1,
+    slim: false,
+  })
+
+  t.true(
+    fs.existsSync(path.join(dir, 'flume', 'log.offset')),
+    'generated fixture with flumelog-offset'
+  )
+
+  const sbot = SecretStack({ appKey: caps.shs })
+    .use(require('ssb-db2'))
+    .call(null, {
+      keys: mainKey,
+      path: dir,
+      db2: {
+        dangerouslyKillFlumeWhenMigrated: true,
+      },
+    })
+
+  sbot.db2migrate.start()
+
+  await new Promise((resolve, reject) => {
+    pull(
+      fromEvent('ssb:db2:migrate:progress', sbot),
+      pull.filter((x) => x === 1),
+      pull.take(1),
+      pull.collect((err) => {
+        if (err) reject(err)
+        else resolve()
+      })
+    )
+  })
+  t.pass('migrated flumelog to ssb-db2')
+
+  await run(sbot.close)(true)
+
+  t.end()
+})
 
 let sbot
+let indexFeedID
 
-test('setup', (t) => {
+test('update index feed for votes a bit', (t) => {
   sbot = SecretStack({ appKey: caps.shs })
     .use(require('ssb-db2'))
+    .use(require('ssb-meta-feeds'))
     .use(require('../'))
     .call(null, {
       keys: mainKey,
       path: dir,
     })
 
-    t.pass('sbot started')
+  // Make it slow so we can cancel in between
+  const PERIOD = 200
+  const originalPublishAs = sbot.db.publishAs
+  sbot.db.publishAs = function (keys, content, cb) {
+    setTimeout(() => {
+      originalPublishAs.call(sbot.db, keys, content, cb)
+    }, PERIOD)
+  }
 
-    sbot.
+  sbot.indexFeedWriter.start(
+    { author: sbot.id, type: 'vote' },
+    (err, indexFeed) => {
+      t.pass('started task')
+      t.error(err, 'no err')
+      t.ok(indexFeed, 'index feed returned')
+      indexFeedID = indexFeed.subfeed
 
-})
-test('add a feed to metafeed', (t) => {
-  const msg = messages.addExistingFeed(metafeedKeys, null, 'main', mainKey)
-
-  t.true(
-    msg.contentSignature.endsWith('.sig.ed25519'),
-    'correct signature format'
+      setTimeout(() => {
+        sbot.indexFeedWriter.stop({ author: sbot.id, type: 'vote' })
+        t.pass('stopped task')
+        sbot.close(true, t.end)
+      }, PERIOD * 3.75)
+    }
   )
-  t.equal(msg.content.subfeed, mainKey.id, 'correct subfeed id')
-  t.equal(msg.content.metafeed, metafeedKeys.id, 'correct metafeed id')
-
-  db.publishAs(metafeedKeys, msg, (err, kv) => {
-    addMsg = kv
-    t.end()
-  })
 })
 
-let tombstoneMsg
-
-test('tombstone a feed in a metafeed', (t) => {
-  const reason = 'Feed no longer used'
-
-  messages.tombstoneFeed(metafeedKeys, addMsg, mainKey, reason, (err, msg) => {
-    t.true(
-      msg.contentSignature.endsWith('.sig.ed25519'),
-      'correct signature format'
-    )
-    t.equal(msg.content.subfeed, mainKey.id, 'correct subfeed id')
-    t.equal(msg.content.tangles.metafeed.root, addMsg.key, 'correct root')
-    t.equal(
-      msg.content.tangles.metafeed.previous,
-      addMsg.key,
-      'correct previous'
-    )
-    t.equal(msg.content.reason, reason, 'correct reason')
-
-    db.publishAs(metafeedKeys, msg, (err, kv) => {
-      tombstoneMsg = kv
-      t.end()
+test('update index feed for votes entirely', async (t) => {
+  sbot = SecretStack({ appKey: caps.shs })
+    .use(require('ssb-db2'))
+    .use(require('ssb-meta-feeds'))
+    .use(require('../'))
+    .call(null, {
+      keys: mainKey,
+      path: dir,
     })
+
+  const votes = await sbot.db.query(where(author(indexFeedID)), toPromise())
+  t.equals(votes.length, 3, '3 votes previously indexed')
+
+  t.pass('started task')
+  const [err, indexFeed] = await run(sbot.indexFeedWriter.start)({
+    author: sbot.id,
+    type: 'vote',
   })
+  t.error(err, 'no err')
+  t.ok(indexFeed, 'index feed returned')
+  t.equals(indexFeed.subfeed, indexFeedID, 'it is the same as before')
+
+  await sleep(300)
+
+  const allVotes = await sbot.db.query(where(author(indexFeedID)), toPromise())
+  t.equals(allVotes.length, 18, '18 votes in total were indexed')
+
+  t.end()
 })
 
-test('second tombstone', (t) => {
-  const msg = messages.addNewFeed(
-    metafeedKeys,
-    tombstoneMsg,
-    'main',
-    seed,
-    'classic'
-  )
-  const newMainKey = keys.deriveFeedKeyFromSeed(
-    seed,
-    msg.content.nonce.toString('base64')
-  )
-  db.publishAs(metafeedKeys, msg, (err, secondAddMsg) => {
-    const reason = 'Also no good'
-
-    messages.tombstoneFeed(
-      metafeedKeys,
-      secondAddMsg,
-      newMainKey,
-      reason,
-      (err, msg) => {
-        t.true(
-          msg.contentSignature.endsWith('.sig.ed25519'),
-          'correct signature format'
-        )
-        t.equal(msg.content.subfeed, newMainKey.id, 'correct subfeed id')
-        t.equal(
-          msg.content.tangles.metafeed.root,
-          secondAddMsg.key,
-          'correct root'
-        )
-        t.equal(
-          msg.content.tangles.metafeed.previous,
-          secondAddMsg.key,
-          'correct previous'
-        )
-        t.equal(msg.content.reason, reason, 'correct reason')
-
-        t.end()
-      }
-    )
-  })
-})
-
-test('metafeed announce', (t) => {
-  messages.generateAnnounceMsg(metafeedKeys, (err, msg) => {
-    t.equal(msg.metafeed, metafeedKeys.id, 'correct metafeed')
-    t.equal(msg.tangles.metafeed.root, null, 'no root')
-    t.equal(msg.tangles.metafeed.previous, null, 'no previous')
-
-    db.publish(msg, (err, announceMsg) => {
-      // test that we fucked up somehow and need to create a new metafeed
-      const newSeed = keys.generateSeed()
-      const mf2Key = keys.deriveFeedKeyFromSeed(newSeed, 'metafeed')
-      messages.generateAnnounceMsg(mf2Key, (err, msg) => {
-        t.equal(msg.metafeed, mf2Key.id, 'correct metafeed')
-        t.equal(msg.tangles.metafeed.root, announceMsg.key, 'correct root')
-        t.equal(
-          msg.tangles.metafeed.previous,
-          announceMsg.key,
-          'correct previous'
-        )
-
-        db.publish(msg, (err, announceMsg2) => {
-          // another test to make sure previous is correctly set
-          const newSeed2 = keys.generateSeed()
-          const mf3Key = keys.deriveFeedKeyFromSeed(newSeed2, 'metafeed')
-          messages.generateAnnounceMsg(mf3Key, (err, msg) => {
-            t.equal(msg.metafeed, mf3Key.id, 'correct metafeed')
-            t.equal(msg.tangles.metafeed.root, announceMsg.key, 'correct root')
-            t.equal(
-              msg.tangles.metafeed.previous,
-              announceMsg2.key,
-              'correct previous'
-            )
-
-            t.end()
-          })
-        })
-      })
-    })
-  })
-})
-
-test('metafeed seed save', (t) => {
-  const msg = messages.generateSeedSaveMsg(metafeedKeys.id, sbot.id, seed)
-
-  t.equal(msg.metafeed, metafeedKeys.id, 'correct metafeed')
-  t.equal(msg.seed.length, 64, 'correct seed')
-  t.equal(msg.recps.length, 1, 'recps for private')
-  t.equal(msg.recps[0], sbot.id, 'correct recps')
-
-  db.publish(msg, (err, publish) => {
-    t.equal(typeof publish.value.content, 'string', 'encrypted')
-    db.get(publish.key, (err, dbPublish) => {
-      t.equal(dbPublish.content.seed, seed_hex, 'correct seed extracted')
-      sbot.close(t.end)
-    })
-  })
+test('teardown', (t) => {
+  sbot.close(true, t.end)
 })
