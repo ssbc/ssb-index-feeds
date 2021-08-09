@@ -11,10 +11,19 @@ const run = require('promisify-tuple')
 const fromEvent = require('pull-stream-util/from-event')
 const sleep = require('util').promisify(setTimeout)
 const generateFixture = require('ssb-fixtures')
-const { where, author, toPromise, toCallback } = require('ssb-db2/operators')
+const {
+  where,
+  and,
+  author,
+  type,
+  count,
+  toPromise,
+} = require('ssb-db2/operators')
 
 const dir = '/tmp/index-feed-writer'
 const mainKey = ssbKeys.loadOrCreateSync(path.join(dir, 'secret'))
+
+let VOTES_COUNT = 0
 
 test('setup', async (t) => {
   rimraf.sync(dir)
@@ -58,8 +67,15 @@ test('setup', async (t) => {
   })
   t.pass('migrated flumelog to ssb-db2')
 
-  await run(sbot.close)(true)
+  const votesCount = await sbot.db.query(
+    where(and(author(sbot.id), type('vote'))),
+    count(),
+    toPromise()
+  )
+  t.true(votesCount > 3, 'more than 3 votes exist')
+  VOTES_COUNT = votesCount
 
+  await run(sbot.close)(true)
   t.end()
 })
 
@@ -127,7 +143,7 @@ test('update index feed for votes entirely', async (t) => {
   await sleep(300)
 
   const allVotes = await sbot.db.query(where(author(indexFeedID)), toPromise())
-  t.equals(allVotes.length, 18, '18 votes in total were indexed')
+  t.equals(allVotes.length, VOTES_COUNT, 'all votes were indexed')
 
   t.end()
 })
