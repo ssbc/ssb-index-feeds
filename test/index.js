@@ -66,6 +66,8 @@ test('setup', async (t) => {
   })
   t.pass('migrated flumelog to ssb-db2')
 
+  await sleep(500)
+
   const votesCount = await sbot.db.query(
     where(and(author(sbot.id), type('vote'))),
     count(),
