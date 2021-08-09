@@ -1,10 +1,11 @@
 const test = require('tape')
 const SecretStack = require('secret-stack')
 const caps = require('ssb-caps')
-const fs = require('fs')
+const OS = require('os')
+const FS = require('fs')
+const Path = require('path')
 const pull = require('pull-stream')
 const ssbKeys = require('ssb-keys')
-const path = require('path')
 const rimraf = require('rimraf')
 const mkdirp = require('mkdirp')
 const run = require('promisify-tuple')
@@ -20,11 +21,11 @@ const {
   toPromise,
 } = require('ssb-db2/operators')
 
-const dir = '/tmp/index-feed-writer'
-const mainKey = ssbKeys.loadOrCreateSync(path.join(dir, 'secret'))
+const dir = Path.join(OS.tmpdir(), 'index-feed-writer')
 rimraf.sync(dir, { maxBusyTries: 3 })
 mkdirp.sync(dir)
 
+let mainKey
 let VOTES_COUNT = 0
 
 test('setup', async (t) => {
@@ -37,9 +38,10 @@ test('setup', async (t) => {
   })
 
   t.true(
-    fs.existsSync(path.join(dir, 'flume', 'log.offset')),
+    FS.existsSync(Path.join(dir, 'flume', 'log.offset')),
     'generated fixture with flumelog-offset'
   )
+  mainKey = ssbKeys.loadOrCreateSync(Path.join(dir, 'secret'))
 
   const sbot = SecretStack({ appKey: caps.shs })
     .use(require('ssb-db2'))
