@@ -15,7 +15,7 @@ const EXPECTED_KEYS = ['author', 'type']
  */
 function validate(query) {
   const keys = Object.keys(query)
-  if (keys.length !== EXPECTED_KEYS.length) {
+  if (keys.length > EXPECTED_KEYS.length) {
     throw new Error('query has too many fields: ' + query)
   }
   for (const k of EXPECTED_KEYS) {
