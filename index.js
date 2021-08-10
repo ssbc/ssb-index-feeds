@@ -110,7 +110,7 @@ exports.init = function init(sbot) {
         })
       }),
 
-      // stream all subsequente indexable messages that match the query
+      // stream all subsequent indexable messages that match the query
       pull.map(function expandStream(latestSequence) {
         const matchesQuery = QL0.toOperator(queryQL0)
         return sbot.db.query(
