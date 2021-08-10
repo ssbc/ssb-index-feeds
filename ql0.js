@@ -1,3 +1,4 @@
+const Ref = require('ssb-ref')
 const { and, author, type } = require('ssb-db2/operators')
 const deepEqual = require('nano-equal')
 
@@ -25,6 +26,9 @@ function validate(query) {
     if (typeof query[k] !== 'string') {
       throw new Error(`query "${k}" should be a valid string: ${query}`)
     }
+  }
+  if (!Ref.isFeedId(query.author)) {
+    throw new Error(`query.author should be a valid SSB feed ID: ${query}`)
   }
 }
 

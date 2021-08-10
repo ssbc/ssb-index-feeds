@@ -56,6 +56,13 @@ test('validate() sad inputs', (t) => {
     'type not string'
   )
 
+  t.throws(
+    () => {
+      QL0.validate({ author: '@fafa', type: 'vote' })
+    },
+    /should be a valid SSB feed ID/,
+    'bad author'
+  )
   t.end()
 })
 
