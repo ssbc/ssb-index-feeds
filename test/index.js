@@ -121,7 +121,7 @@ test('update index feed for votes a bit', (t) => {
   )
 })
 
-test('update index feed for votes entirely', async (t) => {
+test('restarting sbot continues writing index where left off', async (t) => {
   sbot = SecretStack({ appKey: caps.shs })
     .use(require('ssb-db2'))
     .use(require('ssb-meta-feeds'))
@@ -149,6 +149,22 @@ test('update index feed for votes entirely', async (t) => {
   t.equals(allVotes.length, VOTES_COUNT, 'all votes were indexed')
 
   t.end()
+})
+
+test('live updates get written to the index', (t) => {
+  sbot.db.publish({ type: 'vote', vote: { value: 1 } }, async (err) => {
+    t.error(err, 'no err')
+
+    await sleep(300)
+
+    const allVotes = await sbot.db.query(
+      where(author(indexFeedID)),
+      toPromise()
+    )
+    t.equals(allVotes.length, VOTES_COUNT + 1, 'one more vote was indexed')
+
+    t.end()
+  })
 })
 
 test('teardown', (t) => {
