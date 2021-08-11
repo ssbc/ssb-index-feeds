@@ -1,4 +1,5 @@
 const pull = require('pull-stream')
+const cat = require('pull-cat')
 const {
   where,
   and,
@@ -113,15 +114,21 @@ exports.init = function init(sbot) {
       // stream all subsequent indexable messages that match the query
       pull.map(function expandStream(latestSequence) {
         const matchesQuery = QL0.toOperator(queryQL0)
-        return sbot.db.query(
-          where(and(matchesQuery, gt(latestSequence, 'sequence'))),
-          live({ old: true }),
-          paginate(50),
-          toPullStream()
-        )
+        return cat([
+          // Old
+          pull(
+            sbot.db.query(
+              where(and(matchesQuery, gt(latestSequence, 'sequence'))),
+              paginate(50),
+              toPullStream()
+            ),
+            pull.map(pull.values),
+            pull.flatten()
+          ),
+          // Live
+          sbot.db.query(where(matchesQuery), live(), toPullStream()),
+        ])
       }),
-      pull.flatten(),
-      pull.map(pull.values),
       pull.flatten(),
 
       // For each indexable message, write to the index feed
