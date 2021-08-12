@@ -11,7 +11,7 @@ const {
   toPullStream,
   toCallback,
 } = require('ssb-db2/operators')
-const QL0 = require('./ql0')
+const { QL0 } = require('ssb-subset-ql')
 
 exports.name = 'indexFeedWriter'
 exports.version = '1.0.0'
