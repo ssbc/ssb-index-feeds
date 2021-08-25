@@ -96,10 +96,12 @@ test('update index feed for votes a bit', (t) => {
     })
 
   // Make it slow so we can cancel in between
+  let stopped = false
   const PERIOD = 200
   const originalPublishAs = sbot.db.publishAs
   sbot.db.publishAs = function (keys, content, cb) {
     setTimeout(() => {
+      if (stopped) return
       originalPublishAs.call(sbot.db, keys, content, cb)
     }, PERIOD)
   }
@@ -114,9 +116,10 @@ test('update index feed for votes a bit', (t) => {
 
       setTimeout(() => {
         sbot.indexFeedWriter.stop({ author: sbot.id, type: 'vote' })
+        stopped = true
         t.pass('stopped task')
         sbot.close(true, t.end)
-      }, PERIOD * 3.75)
+      }, PERIOD * 3.5)
     }
   )
 })

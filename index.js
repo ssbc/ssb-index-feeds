@@ -7,6 +7,7 @@ const {
   author,
   descending,
   paginate,
+  batch,
   live,
   toPullStream,
   toCallback,
@@ -41,7 +42,7 @@ exports.init = function init(sbot) {
         sbot.metafeeds.findOrCreate(
           mf,
           (f) => f.feedpurpose === 'indexes',
-          { feedpurpose: 'indexes', feedformat: 'bendy butt' },
+          { feedpurpose: 'indexes', feedformat: 'bendybutt-v1' },
           (err, indexesMF) => {
             if (err) return reject(err)
             else resolve(indexesMF)
@@ -116,14 +117,10 @@ exports.init = function init(sbot) {
         const matchesQuery = QL0.toOperator(queryQL0)
         return cat([
           // Old
-          pull(
-            sbot.db.query(
-              where(and(matchesQuery, gt(latestSequence, 'sequence'))),
-              paginate(50),
-              toPullStream()
-            ),
-            pull.map(pull.values),
-            pull.flatten()
+          sbot.db.query(
+            where(and(matchesQuery, gt(latestSequence, 'sequence'))),
+            batch(75),
+            toPullStream()
           ),
           // Live
           sbot.db.query(where(matchesQuery), live(), toPullStream()),
