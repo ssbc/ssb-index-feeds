@@ -138,10 +138,12 @@ test('restarting sbot continues writing index where left off', async (t) => {
   t.equals(votes.length, 3, '3 votes previously indexed')
 
   t.pass('started task')
-  const [err, indexFeed] = await run(sbot.indexFeedWriter.start)({
-    author: sbot.id,
-    type: 'vote',
-  })
+  const [err, indexFeed] = await run(sbot.indexFeedWriter.start)(
+    JSON.stringify({
+      author: sbot.id,
+      type: 'vote',
+    })
+  )
   t.error(err, 'no err')
   t.ok(indexFeed, 'index feed returned')
   t.equals(indexFeed.subfeed, indexFeedID, 'it is the same as before')
