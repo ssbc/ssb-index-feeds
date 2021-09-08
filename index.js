@@ -13,7 +13,6 @@ const {
   toCallback,
 } = require('ssb-db2/operators')
 const { QL0 } = require('ssb-subset-ql')
-const { parse } = require('ssb-subset-ql/ql0')
 
 exports.name = 'indexFeedWriter'
 exports.version = '1.0.0'
