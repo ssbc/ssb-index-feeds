@@ -12,6 +12,7 @@ const {
   toPullStream,
   toCallback,
 } = require('ssb-db2/operators')
+const pify = require('promisify-4loc')
 const { QL0 } = require('ssb-subset-ql')
 
 exports.name = 'indexFeedWriter'
@@ -29,26 +30,14 @@ exports.init = function init(sbot) {
     throw new Error('ssb-index-feed-writer requires ssb-meta-feeds')
   }
 
-  const rootMetafeedP = new Promise((resolve, reject) => {
-    sbot.metafeeds.findOrCreate((err, rootMF) => {
-      if (err) return reject(err)
-      else resolve(rootMF)
-    })
-  })
+  const rootMetafeedP = pify(sbot.metafeeds.findOrCreate)()
 
-  const indexesMetafeedP = rootMetafeedP.then(
-    (mf) =>
-      new Promise((resolve, reject) => {
-        sbot.metafeeds.findOrCreate(
-          mf,
-          (f) => f.feedpurpose === 'indexes',
-          { feedpurpose: 'indexes', feedformat: 'bendybutt-v1' },
-          (err, indexesMF) => {
-            if (err) return reject(err)
-            else resolve(indexesMF)
-          }
-        )
-      })
+  const indexesMetafeedP = rootMetafeedP.then((metafeed) =>
+    pify(sbot.metafeeds.findOrCreate)(
+      metafeed,
+      (f) => f.feedpurpose === 'indexes',
+      { feedpurpose: 'indexes', feedformat: 'bendybutt-v1' }
+    )
   )
 
   /**
