@@ -13,6 +13,7 @@ const {
   toCallback,
 } = require('ssb-db2/operators')
 const { QL0 } = require('ssb-subset-ql')
+const { parse } = require('ssb-subset-ql/ql0')
 
 exports.name = 'indexFeedWriter'
 exports.version = '1.0.0'
@@ -114,7 +115,7 @@ exports.init = function init(sbot) {
 
       // stream all subsequent indexable messages that match the query
       pull.map(function expandStream(latestSequence) {
-        const matchesQuery = QL0.toOperator(queryQL0)
+        const matchesQuery = QL0.toOperator(queryQL0, true)
         return cat([
           // Old
           sbot.db.query(
@@ -149,8 +150,12 @@ exports.init = function init(sbot) {
     try {
       QL0.validate(query)
     } catch (err) {
-      console.warn(err)
+      cb(err)
       return
+    }
+    const author = QL0.parse(query).author
+    if (author !== sbot.id) {
+      cb(new Error('Can only index our own messages, but got author ' + author))
     }
 
     const indexesMF = await indexesMetafeedP
