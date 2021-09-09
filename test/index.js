@@ -153,6 +153,12 @@ test('restarting sbot continues writing index where left off', async (t) => {
   const allVotes = await sbot.db.query(where(author(indexFeedID)), toPromise())
   t.equals(allVotes.length, VOTES_COUNT, 'all votes were indexed')
 
+  const indexMsgs = await sbot.db.query(
+    where(type('metafeed/index')),
+    toPromise()
+  )
+  t.equals(indexMsgs.length, VOTES_COUNT, 'index msgs exist')
+
   t.end()
 })
 
