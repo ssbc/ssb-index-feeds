@@ -15,7 +15,7 @@
     "pull-cat": "^1.1.11",
     "pull-stream": "^3.6.14",
     "ssb-db2": "^2.4.0",
-    "ssb-subset-ql": "ssb-ngi-pointer/ssb-subset-ql#stringify-fixes"
+    "ssb-subset-ql": "~0.6.1"
   },
   "peerDependencies": {
     "ssb-meta-feeds": ">=0.18.0"
