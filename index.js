@@ -30,15 +30,7 @@ exports.init = function init(sbot, config) {
     throw new Error('ssb-index-feed-writer requires ssb-meta-feeds')
   }
 
-  const rootMetafeedP = pify(sbot.metafeeds.findOrCreate)()
-
-  const indexesMetafeedP = rootMetafeedP.then((metafeed) =>
-    pify(sbot.metafeeds.findOrCreate)(
-      metafeed,
-      (f) => f.feedpurpose === 'indexes',
-      { feedpurpose: 'indexes', feedformat: 'bendybutt-v1' }
-    )
-  )
+  let indexesMetafeedP
 
   if (
     config &&
@@ -161,6 +153,16 @@ exports.init = function init(sbot, config) {
       cb(new Error('Can only index our own messages, but got author ' + author))
     }
 
+    if (!indexesMetafeedP) {
+      const rootMetafeedP = pify(sbot.metafeeds.findOrCreate)()
+      indexesMetafeedP = rootMetafeedP.then((metafeed) =>
+        pify(sbot.metafeeds.findOrCreate)(
+          metafeed,
+          (f) => f.feedpurpose === 'indexes',
+          { feedpurpose: 'indexes', feedformat: 'bendybutt-v1' }
+        )
+      )
+    }
     const indexesMF = await indexesMetafeedP
 
     sbot.metafeeds.findOrCreate(
