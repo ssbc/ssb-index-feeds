@@ -106,7 +106,11 @@ test('update index feed for votes a bit', (t) => {
       published += 1
 
       if (published >= 3) {
-        sbot.indexFeedWriter.stop({ author: sbot.id, type: 'vote' })
+        sbot.indexFeedWriter.stop({
+          author: sbot.id,
+          type: 'vote',
+          private: false,
+        })
         t.pass('stopped task')
         sbot.close(true, t.end)
       }
@@ -114,7 +118,7 @@ test('update index feed for votes a bit', (t) => {
   }
 
   sbot.indexFeedWriter.start(
-    { author: sbot.id, type: 'vote' },
+    { author: sbot.id, type: 'vote', private: false },
     (err, indexFeed) => {
       t.pass('started task')
       t.error(err, 'no err')
@@ -142,6 +146,7 @@ test('restarting sbot continues writing index where left off', async (t) => {
     JSON.stringify({
       author: sbot.id,
       type: 'vote',
+      private: false,
     })
   )
   t.error(err, 'no err')
