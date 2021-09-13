@@ -32,7 +32,7 @@ There is one primary API this plugin provides: `start()`. You pass it a
 that query, or update an existing index feed.
 
 ```js
-sbot.indexFeedWriter.start({ author: sbot.id, type: 'vote' }, (err, index) => {
+sbot.indexFeedWriter.start({ author: sbot.id, type: 'vote', private: false }, (err, index) => {
   console.log('The index feed is ' + index.subfeed)
 })
 ```
