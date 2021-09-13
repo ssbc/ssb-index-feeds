@@ -15,6 +15,7 @@ const generateFixture = require('ssb-fixtures')
 const {
   where,
   and,
+  authorIsBendyButtV1,
   author,
   type,
   count,
@@ -117,15 +118,21 @@ test('update index feed for votes a bit', (t) => {
     })
   }
 
-  sbot.indexFeedWriter.start(
-    { author: sbot.id, type: 'vote', private: false },
-    (err, indexFeed) => {
-      t.pass('started task')
-      t.error(err, 'no err')
-      t.ok(indexFeed, 'index feed returned')
-      indexFeedID = indexFeed.subfeed
-    }
-  )
+  // Lets check that creation of the root meta feed is lazy
+  setTimeout(async () => {
+    const msgs = await sbot.db.query(where(authorIsBendyButtV1()), toPromise())
+    t.equals(msgs.length, 0, 'zero bendy butt messages')
+
+    sbot.indexFeedWriter.start(
+      { author: sbot.id, type: 'vote', private: false },
+      (err, indexFeed) => {
+        t.pass('started task')
+        t.error(err, 'no err')
+        t.ok(indexFeed, 'index feed returned')
+        indexFeedID = indexFeed.subfeed
+      }
+    )
+  }, 3000)
 })
 
 test('restarting sbot continues writing index where left off', async (t) => {
