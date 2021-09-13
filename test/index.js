@@ -183,6 +183,42 @@ test('live updates get written to the index', (t) => {
   })
 })
 
+test('autostart calls start on each array item', (t) => {
+  sbot.close(true, () => {
+    sbot = SecretStack({ appKey: caps.shs })
+      .use(require('ssb-db2'))
+      .use(require('ssb-meta-feeds'))
+      .use(require('../'))
+      .call(null, {
+        keys: mainKey,
+        path: dir,
+        indexFeedWriter: {
+          autostart: [
+            { type: 'vote', private: false },
+            { type: 'post', private: false },
+            { type: null, private: true },
+          ],
+        },
+      })
+
+    const expected = [
+      { author: sbot.id, type: 'vote', private: false },
+      { author: sbot.id, type: 'post', private: false },
+      { author: sbot.id, type: null, private: true },
+    ]
+
+    sbot.indexFeedWriter.start = function fakeStart(query, cb) {
+      t.true(expected.length > 0, 'we expect a start() to be called')
+      t.deepEquals(query, expected.shift(), 'start() arg is correct')
+      cb(null, null)
+
+      if (expected.length === 0) {
+        setTimeout(t.end, 1000)
+      }
+    }
+  })
+})
+
 test('teardown', (t) => {
   sbot.close(true, t.end)
 })

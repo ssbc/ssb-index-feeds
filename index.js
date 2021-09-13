@@ -22,7 +22,7 @@ exports.manifest = {
   stop: 'sync',
 }
 
-exports.init = function init(sbot) {
+exports.init = function init(sbot, config) {
   if (!sbot.db || !sbot.db.query) {
     throw new Error('ssb-index-feed-writer requires ssb-db2')
   }
@@ -39,6 +39,21 @@ exports.init = function init(sbot) {
       { feedpurpose: 'indexes', feedformat: 'bendybutt-v1' }
     )
   )
+
+  if (
+    config &&
+    config.indexFeedWriter &&
+    Array.isArray(config.indexFeedWriter.autostart)
+  ) {
+    setTimeout(() => {
+      for (const incompleteQuery of config.indexFeedWriter.autostart) {
+        const query = { ...incompleteQuery, author: sbot.id }
+        sbot.indexFeedWriter.start(query, (err) => {
+          if (err) console.error(err)
+        })
+      }
+    })
+  }
 
   /**
    * Data structure that tracks all indexes being synchronized.
