@@ -31,9 +31,8 @@ There is one primary API this plugin provides: `start()`. You pass it a
 `ssb-ql-0` query and it will detect whether it needs to create an index feed for
 that query, or update an existing index feed.
 
-
 ```js
-sbot.indexFeedWriter.start({author: sbot.id, type: 'vote'}, (err, index) => {
+sbot.indexFeedWriter.start({ author: sbot.id, type: 'vote' }, (err, index) => {
   console.log('The index feed is ' + index.subfeed)
 })
 ```
@@ -66,6 +65,32 @@ _Cancels the updating of the index feed for the given query, if it had started_
 `query` must be an `ssb-ql-0` query, either as stringified JSON or as an object.
 
 Does not return anything as a response.
+
+## Configuration
+
+Some behaviors of this module can be configured by the user or by application
+code through the conventional [ssb-config](https://github.com/ssbc/ssb-config)
+object. The possible options are listed below:
+
+```js
+{
+  indexFeedWriter: {
+    /**
+     * If `autostart` is defined as an array, it informs ssb-index-feed-writer
+     * to automatically call `start()` with each of the array items, as soon as
+     * this plugin is initialized.
+     *
+     * The array items are just ssb-ql-0 objects, except without the `author`
+     * property, because that one will always be implicitly equal to `sbot.id`.
+     */
+    autostart: [
+      { type: 'vote', private: false },
+      { type: 'post', private: false },
+      { type: null, private: true },
+    ]
+  }
+}
+```
 
 ## License
 
