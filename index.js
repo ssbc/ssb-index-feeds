@@ -111,8 +111,8 @@ exports.init = function init(sbot, config) {
           debugTask('setup: latest sequence is 0')
           return cb(null, 0)
         }
-        const { indexed } = latestIndexMsg.value.content
-        sbot.db.get(indexed, (err, msgVal) => {
+        const key = latestIndexMsg.value.content.indexed.key
+        sbot.db.get(key, (err, msgVal) => {
           if (err) return cb(err)
           const latestSequence = msgVal.sequence
           debugTask('setup: latest sequence is %d', latestSequence)
@@ -138,7 +138,10 @@ exports.init = function init(sbot, config) {
 
       // For each indexable message, write to the index feed
       pull.asyncMap(function writeToIndexFeed(msg, cb) {
-        const content = { type: 'metafeed/index', indexed: msg.key }
+        const content = {
+          type: 'metafeed/index',
+          indexed: { key: msg.key, sequence: msg.value.sequence },
+        }
         debugTask('write index msg for %o', content.indexed)
         sbot.db.publishAs(indexFeed.keys, content, cb)
       }),
