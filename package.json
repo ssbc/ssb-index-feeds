@@ -1,7 +1,7 @@
 {
   "name": "ssb-index-feed-writer",
   "description": "Keep an index sub-feed up-to-date with the content feed",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "homepage": "https://github.com/ssb-ngi-pointer/ssb-index-feed-writer",
   "repository": {
     "type": "git",
