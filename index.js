@@ -1,3 +1,4 @@
+const debug = require('debug')('ssb:index-feed-writer')
 const pull = require('pull-stream')
 const cat = require('pull-cat')
 const {
@@ -38,6 +39,7 @@ exports.init = function init(sbot, config) {
     Array.isArray(config.indexFeedWriter.autostart)
   ) {
     setTimeout(() => {
+      debug('autostart is enabled with %j', config.indexFeedWriter.autostart)
       for (const incompleteQuery of config.indexFeedWriter.autostart) {
         const query = { ...incompleteQuery, author: sbot.id }
         sbot.indexFeedWriter.start(query, (err) => {
@@ -52,6 +54,7 @@ exports.init = function init(sbot, config) {
    * Map of "stringified query" -> "pull-stream drainer"
    */
   const tasks = new Map()
+  let taskCount = 0
 
   function schedule(indexFeed) {
     const queryQL0 = QL0.parse(indexFeed.metadata.query)
@@ -80,12 +83,17 @@ exports.init = function init(sbot, config) {
     )
     tasks.set(queryID, drainer)
 
+    taskCount += 1
+    const debugTask = debug.extend('task' + taskCount)
+    debugTask('setup for query %s', queryID)
+
     pull(
       // start chain with a dummy value
       pull.values([null]),
 
       // fetch the last message in the index feed
       pull.asyncMap(function getLastIndexMsg(x, cb) {
+        debugTask('setup: get last index msg from the db')
         sbot.db.query(
           where(author(indexFeed.subfeed)),
           descending(),
@@ -99,11 +107,15 @@ exports.init = function init(sbot, config) {
 
       // fetch the `msg.value.sequence` for the last indexed `msg`
       pull.asyncMap(function getLatestSequence(latestIndexMsg, cb) {
-        if (!latestIndexMsg) return cb(null, 0)
+        if (!latestIndexMsg) {
+          debugTask('setup: latest sequence is 0')
+          return cb(null, 0)
+        }
         const { indexed } = latestIndexMsg.value.content
         sbot.db.get(indexed, (err, msgVal) => {
           if (err) return cb(err)
           const latestSequence = msgVal.sequence
+          debugTask('setup: latest sequence is %d', latestSequence)
           cb(null, latestSequence)
         })
       }),
@@ -126,11 +138,9 @@ exports.init = function init(sbot, config) {
 
       // For each indexable message, write to the index feed
       pull.asyncMap(function writeToIndexFeed(msg, cb) {
-        sbot.db.publishAs(
-          indexFeed.keys,
-          { type: 'metafeed/index', indexed: msg.key },
-          cb
-        )
+        const content = { type: 'metafeed/index', indexed: msg.key }
+        debugTask('write index msg for %o', content.indexed)
+        sbot.db.publishAs(indexFeed.keys, content, cb)
       }),
 
       drainer
@@ -152,8 +162,10 @@ exports.init = function init(sbot, config) {
     if (author !== sbot.id) {
       cb(new Error('Can only index our own messages, but got author ' + author))
     }
+    debug('start() requested for %o', query)
 
     if (!indexesMetafeedP) {
+      debug('loading up indexes meta feed')
       const rootMetafeedP = pify(sbot.metafeeds.findOrCreate)()
       indexesMetafeedP = rootMetafeedP.then((metafeed) =>
         pify(sbot.metafeeds.findOrCreate)(
@@ -194,6 +206,7 @@ exports.init = function init(sbot, config) {
       console.warn(err)
       return
     }
+    debug('stop() requested for %o', query)
 
     const queryQL0 = QL0.parse(query)
     const queryID = QL0.stringify(queryQL0)
@@ -213,6 +226,7 @@ exports.init = function init(sbot, config) {
 
   // When sbot closes, stop all tasks
   sbot.close.hook(function (fn, args) {
+    debug('teardown by cancelling all tasks')
     for (const task of tasks.values()) task.abort()
     tasks.clear()
     fn.apply(this, args)

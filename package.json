@@ -11,6 +11,7 @@
     "*.js"
   ],
   "dependencies": {
+    "debug": "^4.3.2",
     "promisify-4loc": "^1.0.0",
     "pull-cat": "^1.1.11",
     "pull-stream": "^3.6.14",
