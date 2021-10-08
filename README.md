@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2021 Andre 'Staltz' Medeiros
+
+SPDX-License-Identifier: CC0-1.0
+-->
+
 # ssb-index-feed-writer
 
 A secret-stack plugin that uses [ssb-meta-feeds](https://github.com/ssb-ngi-pointer/ssb-meta-feeds)

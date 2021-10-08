@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2021 Andre 'Staltz' Medeiros
+//
+// SPDX-License-Identifier: LGPL-3.0-only
+
 const debug = require('debug')('ssb:index-feed-writer')
 const pull = require('pull-stream')
 const cat = require('pull-cat')

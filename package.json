@@ -8,7 +8,9 @@
     "url": "git://github.com/ssb-ngi-pointer/ssb-index-feed-writer.git"
   },
   "files": [
-    "*.js"
+    "*.js",
+    "package.json.license",
+    "LICENSES/*"
   ],
   "dependencies": {
     "debug": "^4.3.2",
@@ -49,6 +51,6 @@
       "pre-commit": "npm run format-code-staged"
     }
   },
-  "author": "Andre Staltz <contact@staltz.com>",
+  "author": "Andre 'Staltz' Medeiros <contact@staltz.com>",
   "license": "LGPL-3.0"
 }
