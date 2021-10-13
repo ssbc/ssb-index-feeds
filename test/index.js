@@ -164,7 +164,14 @@ test('restarting sbot continues writing index where left off', async (t) => {
   t.ok(indexFeed, 'index feed returned')
   t.equals(indexFeed.subfeed, indexFeedID, 'it is the same as before')
 
-  await sleep(300)
+  await run(sbot.indexFeedWriter.doneOld)(
+    JSON.stringify({
+      author: sbot.id,
+      type: 'vote',
+      private: false,
+    })
+  )
+  t.pass('doneOld called')
 
   const allVotes = await sbot.db.query(where(author(indexFeedID)), toPromise())
   t.equals(allVotes.length, VOTES_COUNT, 'all votes were indexed')

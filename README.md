@@ -64,6 +64,16 @@ is the "subfeed object" containing details on the index feed that matches the
 query. The subfeed object has the shape `{ feedpurpose, subfeed, keys, metadata }`,
 the same shape as returned by `ssb-meta-feeds` APIs.
 
+### `sbot.indexFeedWriter.doneOld(query, cb)` (async)
+
+_Informs you when the index feed for the given query has processed the existing database_
+
+`query` must be an `ssb-ql-0` query, either as stringified JSON or as an object.
+
+The callback `cb` will be called as soon as the *writing* of the index feed has
+finished processing all "old" messages on the log. The callback is called with
+zero arguments.
+
 ### `sbot.indexFeedWriter.stop(query)` (sync)
 
 _Cancels the updating of the index feed for the given query, if it had started_

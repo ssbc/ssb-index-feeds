@@ -24,6 +24,7 @@ exports.name = 'indexFeedWriter'
 exports.version = '1.0.0'
 exports.manifest = {
   start: 'async',
+  doneOld: 'async',
   stop: 'sync',
 }
 
@@ -59,6 +60,9 @@ exports.init = function init(sbot, config) {
    */
   const tasks = new Map()
   let taskCount = 0
+
+  const tasksDoneWithOld = new Set()
+  const doneOldListeners = new Map()
 
   function schedule(indexFeed) {
     const queryQL0 = QL0.parse(indexFeed.metadata.query)
@@ -134,6 +138,7 @@ exports.init = function init(sbot, config) {
             batch(75),
             toPullStream()
           ),
+          pull.values([{ sync: true }]),
           // Live
           sbot.db.query(where(matchesQuery), live(), toPullStream()),
         ])
@@ -142,12 +147,22 @@ exports.init = function init(sbot, config) {
 
       // For each indexable message, write to the index feed
       pull.asyncMap(function writeToIndexFeed(msg, cb) {
-        const content = {
-          type: 'metafeed/index',
-          indexed: { key: msg.key, sequence: msg.value.sequence },
+        if (msg.sync) {
+          tasksDoneWithOld.add(queryID)
+          const listeners = doneOldListeners.get(queryID) || []
+          doneOldListeners.delete(queryID)
+          for (const listener of listeners) {
+            listener()
+          }
+          cb()
+        } else {
+          const content = {
+            type: 'metafeed/index',
+            indexed: { key: msg.key, sequence: msg.value.sequence },
+          }
+          debugTask('write index msg for %o', content.indexed)
+          sbot.db.publishAs(indexFeed.keys, content, cb)
         }
-        debugTask('write index msg for %o', content.indexed)
-        sbot.db.publishAs(indexFeed.keys, content, cb)
       }),
 
       drainer
@@ -205,6 +220,29 @@ exports.init = function init(sbot, config) {
 
   /**
    * @param {string | import('./ql0').QueryQL0} query ssb-ql-0 query
+   * @param {Function} cb callback function
+   */
+  function doneOld(query, cb) {
+    try {
+      QL0.validate(query)
+    } catch (err) {
+      cb(err)
+      return
+    }
+    const queryQL0 = QL0.parse(query)
+    const queryID = QL0.stringify(queryQL0)
+
+    if (tasksDoneWithOld.has(queryID)) {
+      cb()
+    } else {
+      const listeners = doneOldListeners.get(queryID) || []
+      listeners.push(cb)
+      doneOldListeners.set(queryID, listeners)
+    }
+  }
+
+  /**
+   * @param {string | import('./ql0').QueryQL0} query ssb-ql-0 query
    */
   function stop(query) {
     try {
@@ -242,5 +280,6 @@ exports.init = function init(sbot, config) {
   return {
     start,
     stop,
+    doneOld,
   }
 }
