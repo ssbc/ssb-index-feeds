@@ -201,6 +201,25 @@ test('live updates get written to the index', (t) => {
   })
 })
 
+test('doneOld is called immediately on an empty index feed', async (t) => {
+  const [err, indexFeed] = await run(sbot.indexFeedWriter.start)({
+    author: sbot.id,
+    type: 'other',
+    private: false,
+  })
+  t.error(err, 'no err')
+  t.ok(indexFeed, 'index feed returned')
+
+  await run(sbot.indexFeedWriter.doneOld)({
+    author: sbot.id,
+    type: 'other',
+    private: false,
+  })
+  t.pass('doneOld called')
+
+  t.end()
+})
+
 test('autostart calls start on each array item', (t) => {
   sbot.close(true, () => {
     sbot = SecretStack({ appKey: caps.shs })
