@@ -14,7 +14,7 @@ to create and update [index feeds](https://github.com/ssb-ngi-pointer/ssb-secure
 **Prerequisites:**
 
 - Requires **Node.js 10** or higher
-- Requires `ssb-db2`
+- Requires `ssb-db2` version 5.0 or higher
 - Requires `ssb-meta-feeds`
 
 ```

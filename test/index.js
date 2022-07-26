@@ -13,7 +13,6 @@ const ssbKeys = require('ssb-keys')
 const rimraf = require('rimraf')
 const mkdirp = require('mkdirp')
 const run = require('promisify-tuple')
-const fromEvent = require('pull-stream-util/from-event')
 const sleep = require('util').promisify(setTimeout)
 const generateFixture = require('ssb-fixtures')
 const {
@@ -62,7 +61,7 @@ test('setup', async (t) => {
 
   await new Promise((resolve, reject) => {
     pull(
-      fromEvent('ssb:db2:migrate:progress', sbot),
+      sbot.db2migrate.progress(),
       pull.filter((x) => x === 1),
       pull.take(1),
       pull.collect((err) => {
@@ -93,6 +92,7 @@ let indexFeedID
 test('update index feed for votes a bit', (t) => {
   sbot = SecretStack({ appKey: caps.shs })
     .use(require('ssb-db2'))
+    .use(require('ssb-bendy-butt'))
     .use(require('ssb-meta-feeds'))
     .use(require('../'))
     .call(null, {
@@ -102,12 +102,16 @@ test('update index feed for votes a bit', (t) => {
 
   // Make it slow so we can cancel in between
   let published = 0
-  const originalPublishAs = sbot.db.publishAs
-  sbot.db.publishAs = function (keys, content, cb) {
+  const originalCreate = sbot.db.create
+  sbot.db.create = function (opts, cb) {
+    if (opts.content.type !== 'metafeed/index') {
+      return originalCreate.call(sbot.db, opts, cb)
+    }
+
     setTimeout(() => {
       if (published >= 3) return
 
-      originalPublishAs.call(sbot.db, keys, content, cb)
+      originalCreate.call(sbot.db, opts, cb)
       published += 1
 
       if (published >= 3) {
@@ -142,6 +146,7 @@ test('update index feed for votes a bit', (t) => {
 test('restarting sbot continues writing index where left off', async (t) => {
   sbot = SecretStack({ appKey: caps.shs })
     .use(require('ssb-db2'))
+    .use(require('ssb-bendy-butt'))
     .use(require('ssb-meta-feeds'))
     .use(require('../'))
     .call(null, {
@@ -224,6 +229,7 @@ test('autostart calls start on each array item', (t) => {
   sbot.close(true, () => {
     sbot = SecretStack({ appKey: caps.shs })
       .use(require('ssb-db2'))
+      .use(require('ssb-bendy-butt'))
       .use(require('ssb-meta-feeds'))
       .use(require('../'))
       .call(null, {
