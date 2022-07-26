@@ -161,7 +161,7 @@ exports.init = function init(sbot, config) {
             indexed: { key: msg.key, sequence: msg.value.sequence },
           }
           debugTask('write index msg for %o', content.indexed)
-          sbot.db.publishAs(indexFeed.keys, content, cb)
+          sbot.db.create({ keys: indexFeed.keys, content }, cb)
         }
       }),
 
