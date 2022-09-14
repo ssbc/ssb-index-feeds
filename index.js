@@ -35,6 +35,7 @@ exports.init = function init(sbot, config) {
   if (!sbot.metafeeds) {
     throw new Error('ssb-index-feed-writer requires ssb-meta-feeds')
   }
+  sbot.db.installFeedFormat(require('./format'))
 
   let indexesMetafeedP
 
@@ -119,7 +120,7 @@ exports.init = function init(sbot, config) {
           debugTask('setup: latest sequence is 0')
           return cb(null, 0)
         }
-        const key = latestIndexMsg.value.content.indexed.key
+        const key = latestIndexMsg.value.content.indexed
         sbot.db.get(key, (err, msgVal) => {
           if (err) return cb(err)
           const latestSequence = msgVal.sequence
@@ -156,12 +157,14 @@ exports.init = function init(sbot, config) {
           }
           cb()
         } else {
-          const content = {
-            type: 'metafeed/index',
-            indexed: { key: msg.key, sequence: msg.value.sequence },
-          }
+          const payload = msg.value
+          const content = { type: 'metafeed/index', indexed: msg.key }
+          const feedFormat = 'indexed-v1'
           debugTask('write index msg for %o', content.indexed)
-          sbot.db.create({ keys: indexFeed.keys, content }, cb)
+          sbot.db.create(
+            { keys: indexFeed.keys, content, feedFormat, payload },
+            cb
+          )
         }
       }),
 
@@ -207,7 +210,7 @@ exports.init = function init(sbot, config) {
         QL0.isEquals(f.metadata.query, query),
       {
         feedpurpose: 'index',
-        feedformat: 'classic',
+        feedformat: 'indexed-v1',
         metadata: { querylang: 'ssb-ql-0', query: QL0.stringify(query) },
       },
       (err, indexSubfeed) => {
