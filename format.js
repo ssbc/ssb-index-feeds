@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2022 Andre 'Staltz' Medeiros
+//
+// SPDX-License-Identifier: LGPL-3.0-only
+
 const classic = require('ssb-classic/format')
 const { isIndexedV1FeedSSBURI } = require('ssb-uri2')
 const getMsgId = require('./get-msg-id')
