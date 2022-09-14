@@ -1,11 +1,11 @@
 {
-  "name": "ssb-index-feed-writer",
-  "description": "Keep an index sub-feed up-to-date with the content feed",
+  "name": "ssb-index-feeds",
+  "description": "Keep an index feed up-to-date with the content feed",
   "version": "0.8.0",
-  "homepage": "https://github.com/ssb-ngi-pointer/ssb-index-feed-writer",
+  "homepage": "https://github.com/ssbc/ssb-index-feeds",
   "repository": {
     "type": "git",
-    "url": "git://github.com/ssb-ngi-pointer/ssb-index-feed-writer.git"
+    "url": "git://github.com/ssbc/ssb-index-feeds.git"
   },
   "files": [
     "*.js",
@@ -24,7 +24,7 @@
     "ssb-uri2": "^2.1.0"
   },
   "peerDependencies": {
-    "ssb-meta-feeds": ">=0.29.0"
+    "ssb-meta-feeds": ">=0.30.0"
   },
   "devDependencies": {
     "husky": "^4.3.0",

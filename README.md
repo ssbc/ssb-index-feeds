@@ -4,10 +4,13 @@ SPDX-FileCopyrightText: 2021 Andre 'Staltz' Medeiros
 SPDX-License-Identifier: CC0-1.0
 -->
 
-# ssb-index-feed-writer
+# ssb-index-feeds
 
-A secret-stack plugin that uses [ssb-meta-feeds](https://github.com/ssb-ngi-pointer/ssb-meta-feeds)
-to create and update [index feeds](https://github.com/ssb-ngi-pointer/ssb-secure-partial-replication-spec#indexes).
+A secret-stack plugin that uses [ssb-meta-feeds](https://github.com/ssbc/ssb-meta-feeds)
+to create and update [index feeds](https://github.com/ssbc/ssb-secure-partial-replication-spec#indexes).
+
+Also contains a [feed format](https://github.com/ssbc/feed-format) `indexed-v1`
+under `./format.js`.
 
 ## Installation
 
@@ -18,7 +21,7 @@ to create and update [index feeds](https://github.com/ssb-ngi-pointer/ssb-secure
 - Requires `ssb-meta-feeds`
 
 ```
-npm install --save ssb-index-feed-writer
+npm install --save ssb-index-feeds
 ```
 
 Add this plugin like this:
@@ -27,7 +30,7 @@ Add this plugin like this:
  const sbot = SecretStack({ appKey: caps.shs })
      .use(require('ssb-db2'))
      .use(require('ssb-meta-feeds'))
-+    .use(require('ssb-index-feed-writer'))
++    .use(require('ssb-index-feeds'))
      // ...
 ```
 
