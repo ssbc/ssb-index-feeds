@@ -37,4 +37,4 @@ jobs:
           node-version: ${{ matrix.node-version }}
       - run: npm install
       - name: npm test
-        run: DEBUG=ssb:index-feed-writer,ssb:index-feed-writer:* npm test
+        run: DEBUG=ssb:index-feeds,ssb:index-feeds:* npm test

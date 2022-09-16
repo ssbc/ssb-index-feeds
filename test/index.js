@@ -25,7 +25,7 @@ const {
   toPromise,
 } = require('ssb-db2/operators')
 
-const dir = Path.join(OS.tmpdir(), 'index-feed-writer')
+const dir = Path.join(OS.tmpdir(), 'index-feeds')
 rimraf.sync(dir, { maxBusyTries: 3 })
 mkdirp.sync(dir)
 
@@ -115,7 +115,7 @@ test('update index feed for votes a bit', (t) => {
       published += 1
 
       if (published >= 3) {
-        sbot.indexFeedWriter.stop({
+        sbot.indexFeeds.stop({
           author: sbot.id,
           type: 'vote',
           private: false,
@@ -131,7 +131,7 @@ test('update index feed for votes a bit', (t) => {
     const msgs = await sbot.db.query(where(authorIsBendyButtV1()), toPromise())
     t.equals(msgs.length, 0, 'zero bendy butt messages')
 
-    sbot.indexFeedWriter.start(
+    sbot.indexFeeds.start(
       { author: sbot.id, type: 'vote', private: false },
       (err, indexFeed) => {
         t.pass('started task')
@@ -158,7 +158,7 @@ test('restarting sbot continues writing index where left off', async (t) => {
   t.equals(votes.length, 3, '3 votes previously indexed')
 
   t.pass('started task')
-  const [err, indexFeed] = await run(sbot.indexFeedWriter.start)(
+  const [err, indexFeed] = await run(sbot.indexFeeds.start)(
     JSON.stringify({
       author: sbot.id,
       type: 'vote',
@@ -169,7 +169,7 @@ test('restarting sbot continues writing index where left off', async (t) => {
   t.ok(indexFeed, 'index feed returned')
   t.equals(indexFeed.subfeed, indexFeedID, 'it is the same as before')
 
-  await run(sbot.indexFeedWriter.doneOld)(
+  await run(sbot.indexFeeds.doneOld)(
     JSON.stringify({
       author: sbot.id,
       type: 'vote',
@@ -207,7 +207,7 @@ test('live updates get written to the index', (t) => {
 })
 
 test('doneOld is called immediately on an empty index feed', async (t) => {
-  const [err, indexFeed] = await run(sbot.indexFeedWriter.start)({
+  const [err, indexFeed] = await run(sbot.indexFeeds.start)({
     author: sbot.id,
     type: 'other',
     private: false,
@@ -215,7 +215,7 @@ test('doneOld is called immediately on an empty index feed', async (t) => {
   t.error(err, 'no err')
   t.ok(indexFeed, 'index feed returned')
 
-  await run(sbot.indexFeedWriter.doneOld)({
+  await run(sbot.indexFeeds.doneOld)({
     author: sbot.id,
     type: 'other',
     private: false,
@@ -235,7 +235,7 @@ test('autostart calls start on each array item', (t) => {
       .call(null, {
         keys: mainKey,
         path: dir,
-        indexFeedWriter: {
+        indexFeeds: {
           autostart: [
             { type: 'vote', private: false },
             { type: 'post', private: false },
@@ -250,7 +250,7 @@ test('autostart calls start on each array item', (t) => {
       { author: sbot.id, type: null, private: true },
     ]
 
-    sbot.indexFeedWriter.start = function fakeStart(query, cb) {
+    sbot.indexFeeds.start = function fakeStart(query, cb) {
       t.true(expected.length > 0, 'we expect a start() to be called')
       t.deepEquals(query, expected.shift(), 'start() arg is correct')
       cb(null, null)
