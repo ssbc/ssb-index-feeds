@@ -9,7 +9,7 @@ SPDX-License-Identifier: CC0-1.0
 A secret-stack plugin that uses [ssb-meta-feeds](https://github.com/ssbc/ssb-meta-feeds)
 to create and update [index feeds](https://github.com/ssbc/ssb-secure-partial-replication-spec#indexes).
 
-Also contains a [feed format](https://github.com/ssbc/feed-format) `indexed-v1`
+Also contains a [feed format](https://github.com/ssbc/ssb-feed-format) `indexed-v1`
 under `./format.js`.
 
 ## Installation
