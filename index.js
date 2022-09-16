@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-only
 
-const debug = require('debug')('ssb:index-feed-writer')
+const debug = require('debug')('ssb:index-feeds')
 const pull = require('pull-stream')
 const cat = require('pull-cat')
 const {
@@ -20,7 +20,7 @@ const {
 const pify = require('promisify-4loc')
 const { QL0 } = require('ssb-subset-ql')
 
-exports.name = 'indexFeedWriter'
+exports.name = 'indexFeeds'
 exports.version = '1.0.0'
 exports.manifest = {
   start: 'async',
@@ -30,10 +30,10 @@ exports.manifest = {
 
 exports.init = function init(sbot, config) {
   if (!sbot.db || !sbot.db.query) {
-    throw new Error('ssb-index-feed-writer requires ssb-db2')
+    throw new Error('ssb-index-feeds requires ssb-db2')
   }
   if (!sbot.metafeeds) {
-    throw new Error('ssb-index-feed-writer requires ssb-meta-feeds')
+    throw new Error('ssb-index-feeds requires ssb-meta-feeds')
   }
   sbot.db.installFeedFormat(require('./format'))
 
@@ -41,14 +41,14 @@ exports.init = function init(sbot, config) {
 
   if (
     config &&
-    config.indexFeedWriter &&
-    Array.isArray(config.indexFeedWriter.autostart)
+    config.indexFeeds &&
+    Array.isArray(config.indexFeeds.autostart)
   ) {
     setTimeout(() => {
-      debug('autostart is enabled with %j', config.indexFeedWriter.autostart)
-      for (const incompleteQuery of config.indexFeedWriter.autostart) {
+      debug('autostart is enabled with %j', config.indexFeeds.autostart)
+      for (const incompleteQuery of config.indexFeeds.autostart) {
         const query = { ...incompleteQuery, author: sbot.id }
-        sbot.indexFeedWriter.start(query, (err) => {
+        sbot.indexFeeds.start(query, (err) => {
           if (err) console.error(err)
         })
       }
@@ -71,7 +71,7 @@ exports.init = function init(sbot, config) {
 
     if (tasks.has(queryID)) {
       console.warn(
-        'ssb-index-feed-writer: Not scheduling writing ' +
+        'ssb-index-feeds: Not scheduling writing ' +
           queryID +
           ' because there already is one'
       )
@@ -83,7 +83,7 @@ exports.init = function init(sbot, config) {
       (err) => {
         if (err) {
           console.warn(
-            'ssb-index-feed-writer: task for query ' + queryID + ' failed: ',
+            'ssb-index-feeds: task for query ' + queryID + ' failed: ',
             err
           )
           tasks.delete(queryID)
@@ -260,7 +260,7 @@ exports.init = function init(sbot, config) {
     const queryID = QL0.stringify(queryQL0)
     if (!tasks.has(queryID)) {
       console.warn(
-        'ssb-index-feed-writer: unnecessary stop() for query ' +
+        'ssb-index-feeds: unnecessary stop() for query ' +
           queryID +
           ' which wasnt running anyway'
       )

@@ -41,7 +41,7 @@ There is one primary API this plugin provides: `start()`. You pass it a
 that query, or update an existing index feed.
 
 ```js
-sbot.indexFeedWriter.start({ author: sbot.id, type: 'vote', private: false }, (err, index) => {
+sbot.indexFeeds.start({ author: sbot.id, type: 'vote', private: false }, (err, index) => {
   console.log('The index feed is ' + index.subfeed)
 })
 ```
@@ -54,7 +54,7 @@ input.
 
 ## API
 
-### `sbot.indexFeedWriter.start(query, cb)` (async)
+### `sbot.indexFeeds.start(query, cb)` (async)
 
 _Begins updating an index feed for the given query_
 
@@ -67,7 +67,7 @@ is the "subfeed object" containing details on the index feed that matches the
 query. The subfeed object has the shape `{ feedpurpose, subfeed, keys, metadata }`,
 the same shape as returned by `ssb-meta-feeds` APIs.
 
-### `sbot.indexFeedWriter.doneOld(query, cb)` (async)
+### `sbot.indexFeeds.doneOld(query, cb)` (async)
 
 _Informs you when the index feed for the given query has processed the existing database_
 
@@ -77,7 +77,7 @@ The callback `cb` will be called as soon as the *writing* of the index feed has
 finished processing all "old" messages on the log. The callback is called with
 zero arguments.
 
-### `sbot.indexFeedWriter.stop(query)` (sync)
+### `sbot.indexFeeds.stop(query)` (sync)
 
 _Cancels the updating of the index feed for the given query, if it had started_
 
@@ -93,10 +93,10 @@ object. The possible options are listed below:
 
 ```js
 {
-  indexFeedWriter: {
+  indexFeeds: {
     /**
-     * If `autostart` is defined as an array, it informs ssb-index-feed-writer
-     * to automatically call `start()` with each of the array items, as soon as
+     * If `autostart` is defined as an array, it informs ssb-index-feeds to
+     * automatically call `start()` with each of the array items, as soon as
      * this plugin is initialized.
      *
      * The array items are just ssb-ql-0 objects, except without the `author`
