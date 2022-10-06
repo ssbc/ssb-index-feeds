@@ -37,8 +37,6 @@ exports.init = function init(sbot, config) {
   }
   sbot.db.installFeedFormat(require('./format'))
 
-  let indexesMetafeedP
-
   if (
     config &&
     config.indexFeeds &&
@@ -176,38 +174,23 @@ exports.init = function init(sbot, config) {
    * @param {string | import('./ql0').QueryQL0} query ssb-ql-0 query
    * @param {Function} cb callback function
    */
-  async function start(query, cb) {
+  function start(query, cb) {
     try {
       QL0.validate(query)
     } catch (err) {
       cb(err)
       return
     }
-    const author = QL0.parse(query).author
+    if (typeof query === 'string') {
+      query = QL0.parse(query)
+    }
+    const author = query.author
     if (author !== sbot.id) {
       cb(new Error('Can only index our own messages, but got author ' + author))
     }
     debug('start() requested for %o', query)
 
-    if (!indexesMetafeedP) {
-      debug('loading up indexes meta feed')
-      const rootMetafeedP = pify(sbot.metafeeds.findOrCreate)()
-      indexesMetafeedP = rootMetafeedP.then((metafeed) =>
-        pify(sbot.metafeeds.findOrCreate)(
-          metafeed,
-          (f) => f.feedpurpose === 'indexes',
-          { feedpurpose: 'indexes', feedformat: 'bendybutt-v1' }
-        )
-      )
-    }
-    const indexesMF = await indexesMetafeedP
-
     sbot.metafeeds.findOrCreate(
-      indexesMF,
-      (f) =>
-        f.feedpurpose === 'index' &&
-        f.metadata.querylang === 'ssb-ql-0' &&
-        QL0.isEquals(f.metadata.query, query),
       {
         feedpurpose: 'index',
         feedformat: 'indexed-v1',
