@@ -25,9 +25,6 @@
     "ssb-subset-ql": "^1.0.0",
     "ssb-uri2": "^2.1.0"
   },
-  "peerDependencies": {
-    "ssb-meta-feeds": ">=0.33.0"
-  },
   "devDependencies": {
     "husky": "^4.3.0",
     "mkdirp": "^1.0.4",
