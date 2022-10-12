@@ -1,7 +1,7 @@
 {
   "name": "ssb-index-feeds",
   "description": "Keep an index feed up-to-date with the content feed",
-  "version": "0.10.0",
+  "version": "0.10.1",
   "homepage": "https://github.com/ssbc/ssb-index-feeds",
   "repository": {
     "type": "git",
