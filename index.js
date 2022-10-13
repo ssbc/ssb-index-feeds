@@ -17,7 +17,6 @@ const {
   toPullStream,
   toCallback,
 } = require('ssb-db2/operators')
-const pify = require('promisify-4loc')
 const { QL0 } = require('ssb-subset-ql')
 
 exports.name = 'indexFeeds'
@@ -102,7 +101,7 @@ exports.init = function init(sbot, config) {
       pull.asyncMap(function getLastIndexMsg(x, cb) {
         debugTask('setup: get last index msg from the db')
         sbot.db.query(
-          where(author(indexFeed.subfeed)),
+          where(author(indexFeed.id)),
           descending(),
           paginate(1),
           toCallback((err, answer) => {
@@ -192,14 +191,14 @@ exports.init = function init(sbot, config) {
 
     sbot.metafeeds.findOrCreate(
       {
-        feedpurpose: 'index',
-        feedformat: 'indexed-v1',
+        purpose: 'index',
+        feedFormat: 'indexed-v1',
         metadata: { querylang: 'ssb-ql-0', query: QL0.stringify(query) },
       },
-      (err, indexSubfeed) => {
+      (err, indexFeed) => {
         if (err) return cb(err)
-        cb(null, indexSubfeed)
-        schedule(indexSubfeed)
+        cb(null, indexFeed)
+        schedule(indexFeed)
       }
     )
   }

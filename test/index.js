@@ -137,7 +137,7 @@ test('update index feed for votes a bit', (t) => {
         t.pass('started task')
         t.error(err, 'no err')
         t.ok(indexFeed, 'index feed returned')
-        indexFeedID = indexFeed.subfeed
+        indexFeedID = indexFeed.id
       }
     )
   }, 3000)
@@ -167,7 +167,7 @@ test('restarting sbot continues writing index where left off', async (t) => {
   )
   t.error(err, 'no err')
   t.ok(indexFeed, 'index feed returned')
-  t.equals(indexFeed.subfeed, indexFeedID, 'it is the same as before')
+  t.equals(indexFeed.id, indexFeedID, 'it is the same as before')
 
   await run(sbot.indexFeeds.doneOld)(
     JSON.stringify({
